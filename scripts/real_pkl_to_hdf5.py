@@ -8,7 +8,7 @@ import argparse
 def load_episodes(directory, capacity=None):
     # The returned directory from filenames to episodes is guaranteed to be in
     # temporally sorted order.
-    filenames = sorted(directory.glob('*.npz'))
+    filenames = sorted(directory.glob('**/*.pkl'))
     if capacity:
         num_steps = 0
         num_episodes = 0
@@ -23,8 +23,20 @@ def load_episodes(directory, capacity=None):
     for filename in filenames:
         try:
             with filename.open('rb') as f:
-                episode = np.load(f)
-                episode = {k: episode[k] for k in episode.keys()}
+                raw_episode = np.load(f, allow_pickle=True)
+                # episode = {k: episode[k] for k in episode.keys()}
+                episode = {}
+                episode['observation'] = raw_episode['image']
+                episode['action'] = raw_episode['action']
+                rewards = np.zeros(episode['observation'].shape[0])
+                rewards[-1] = 1
+                episode['reward'] = rewards
+                episode['discount'] = np.ones(episode['observation'].shape[0])
+                step_type = np.ones(episode['observation'].shape)
+                step_type[0] = 0
+                step_type[-1] = 2
+                episode['step_type'] = step_type
+
                 # Conversion for older versions of npz files.
                 if 'is_terminal' not in episode:
                     episode['is_terminal'] = episode['discount'] == 0.
@@ -44,9 +56,9 @@ def main():
                         help='Path to output files')
     args = parser.parse_args()
 
-    step_type = np.ones(501)
-    step_type[0] = 0
-    step_type[500] = 2
+    # step_type = np.ones(501)
+    # step_type[0] = 0
+    # step_type[500] = 2
 
     output = {}
     episodes = load_episodes(pathlib.Path(args.input_dir))
@@ -54,14 +66,14 @@ def main():
 
     actions = [e['action'] for e in episodes]
     discounts = [e['discount'] for e in episodes]
-    observations = [e['image'].transpose(0, 3, 1, 2) for e in episodes]
-    # for e in episodes:
-    #     resized_images = np.empty((501, 84, 84, 3), dtype=e['image'].dtype)
-    #     for (k, i) in enumerate(e['image']):
-    #         resized_images[k] = cv2.resize(i, dsize=(84, 84), interpolation=cv2.INTER_CUBIC)
-    #     observations.append(resized_images.transpose(0, 3, 1, 2))
+    observations = []
+    for e in episodes:
+        resized_images = np.empty((e['observation'].shape[0], 64, 64, 3), dtype=e['observation'].dtype)
+        for (k, i) in enumerate(e['observation']):
+            resized_images[k] = cv2.resize(i, dsize=(64, 64), interpolation=cv2.INTER_CUBIC)
+        observations.append(resized_images.transpose(0, 3, 1, 2))
     rewards = [e['reward'] for e in episodes]
-    step_types = [step_type for _ in episodes]
+    step_types = [e['step_type'] for e in episodes]
 
     output['action'] = np.concatenate(actions)
     output['discount'] = np.concatenate(discounts)

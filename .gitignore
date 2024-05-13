@@ -128,3 +128,8 @@ dmypy.json
 # Pyre type checker
 .pyre/
 .idea/
+
+/vd4rl_data
+expert.*
+/exp_local
+/*data

@@ -59,7 +59,7 @@ def main():
                 observations = observations[501:]
                 rewards = rewards[501:]
                 discounts = discounts[501:]
-                save_episode(out_dir, ep)
+                # save_episode(out_dir, ep)
 
 
 if __name__ == '__main__':

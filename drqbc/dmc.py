@@ -200,7 +200,7 @@ class ExtendedTimeStepWrapper(dm_env.Environment):
 
 
 def make(name, frame_stack, action_repeat, seed, distracting_mode: str = None, multitask_mode: str = None):
-    pixel_hw = 84
+    pixel_hw = 64
     if 'offline' in name:
         name = '_'.join(name.split('_')[1:3])
     domain, task = name.split('_', 1)
